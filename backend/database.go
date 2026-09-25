@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	_ "embed"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,9 +10,6 @@ import (
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 )
-
-//go:embed schema.sql
-var schema string
 
 type Database struct {
 	conn *sql.DB
@@ -97,52 +94,17 @@ func NewDatabase(path string) (*Database, error) {
 	conn.SetMaxIdleConns(5)
 
 	db := &Database{conn: conn}
-	if err := db.initSchema(); err != nil {
+	migrations, err := loadMigrations(migrationFiles, "migrations")
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	if err := migrate(context.Background(), conn, migrations); err != nil {
+		conn.Close()
 		return nil, err
 	}
 
 	return db, nil
-}
-
-func (db *Database) initSchema() error {
-	_, err := db.conn.Exec(schema)
-	if err != nil {
-		return err
-	}
-
-	// Migrations for databases created by older versions.
-	hasColor, err := db.columnExists("connection_types", "color")
-	if err != nil {
-		return err
-	}
-	if !hasColor {
-		if _, err := db.conn.Exec("ALTER TABLE connection_types ADD COLUMN color TEXT DEFAULT '#666'"); err != nil {
-			return fmt.Errorf("failed to add connection_types.color: %w", err)
-		}
-	}
-
-	hasWeight, err := db.columnExists("connections", "weight")
-	if err != nil {
-		return err
-	}
-	if hasWeight {
-		if _, err := db.conn.Exec("ALTER TABLE connections DROP COLUMN weight"); err != nil {
-			return fmt.Errorf("failed to drop connections.weight: %w", err)
-		}
-	}
-	return nil
-}
-
-func (db *Database) columnExists(table, column string) (bool, error) {
-	var one int
-	err := db.conn.QueryRow("SELECT 1 FROM pragma_table_info(?) WHERE name = ?", table, column).Scan(&one)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	}
-	if err != nil {
-		return false, fmt.Errorf("failed to inspect %s.%s: %w", table, column, err)
-	}
-	return true, nil
 }
 
 func (db *Database) Close() error {

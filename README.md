@@ -37,8 +37,9 @@ conspiracy-board/
 │   ├── main.go
 │   ├── models.go
 │   ├── database.go
+│   ├── migrate.go        # Migration runner
+│   ├── migrations/       # Numbered SQL migrations (embedded, applied on startup)
 │   ├── handlers.go
-│   ├── schema.sql        # SQL schema (embedded and applied on startup)
 │   ├── go.mod
 │   ├── conspiracy-board.exe
 │   └── conspiracy-board.db
@@ -53,6 +54,23 @@ conspiracy-board/
 │   └── index.html
 └── README.md
 ```
+
+## Database Migrations
+
+The schema is defined by the SQL files in `backend/migrations/`, which are embedded in the
+binary. On startup the backend applies any migration not yet listed in the `schema_migrations`
+table, in version order, inside a single transaction (all pending migrations succeed or none do).
+
+To change the schema, add a new file with the next number, e.g.
+`backend/migrations/0002_add_person_notes.sql`. Rules:
+
+- File names must match `NNNN_name.sql` (lowercase name), with versions contiguous from `0001`.
+- Never edit or delete a migration that has already been released — add a new one instead.
+- The backend refuses to start if the database is at a newer version than the binary knows.
+- `PRAGMA foreign_keys` has no effect inside a transaction, so migrations that rebuild tables
+  must not rely on toggling it.
+
+Run the tests with `cd backend && go test ./...`.
 
 ## Backend API
 
