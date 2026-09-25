@@ -1,0 +1,10 @@
+.idea/
+*.iml
+node_modules
+dist
+/tmp
+*.log
+.DS_Store
+.env
+*.db
+*.exe

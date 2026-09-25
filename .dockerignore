@@ -1,0 +1,10 @@
+.git
+.gitignore
+.idea
+*.md
+node_modules
+frontend/dist
+backend/*.exe~
+.DS_Store
+*.iml
+conspiracy-board.exe~
