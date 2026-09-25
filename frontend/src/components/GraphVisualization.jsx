@@ -73,6 +73,12 @@ export function GraphVisualization() {
                 title: conn.description || `Connection ${conn.id}`,
                 width: 2,
                 color: typeColorMap[conn.type_id] || '#666',
+                arrows: {
+                  to: {
+                    enabled: true,
+                    scaleFactor: 0.5,
+                  },
+                },
                 highlight: {
                   color: typeColorMap[conn.type_id] || '#666',
                   width: 4,
