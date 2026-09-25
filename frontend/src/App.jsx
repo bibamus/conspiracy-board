@@ -17,14 +17,16 @@ function App() {
 
   return (
     <div className="app">
-      <div className="container">
+      <div className="container" inert={isManageModalOpen}>
         <aside className="sidebar">
           <div className="sidebar-content">
             <button 
+              type="button"
               className="manage-btn"
+              aria-haspopup="dialog"
               onClick={() => setIsManageModalOpen(true)}
             >
-              ➕ Manage Connection Types
+              <span aria-hidden="true">➕</span> Manage Connection Types
             </button>
             <AddPerson onPersonAdded={handleDataChanged} />
             <AddConnection onConnectionAdded={handleDataChanged} refreshTrigger={dataVersion} />

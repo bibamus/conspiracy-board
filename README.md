@@ -7,9 +7,8 @@ A directed graph visualization system for mapping relationships between people. 
 ### Start Backend
 ```bash
 cd backend
-go build -o conspiracy-board.exe
-./conspiracy-board.exe
-# Server runs on http://localhost:8080
+go run .
+# Server runs on http://localhost:8000 (database: ./conspiracy-board.db, override with DB_PATH)
 ```
 
 ### Start Frontend
@@ -20,29 +19,31 @@ npm run dev
 # App runs on http://localhost:3000
 ```
 
+Requires Go 1.27+ and Node.js 20.19+ or 22.12+. For a single-container deployment see
+[DOCKER.md](DOCKER.md).
+
 ## Features
 
 - **Directed Graph**: Create people (nodes) and connections (edges) between them
 - **Typed Connections**: Define custom connection types (e.g., "knows", "works-with", "investigated-by")
-- **REST API**: Full CRUD operations for managing the graph
+- **REST API**: Create, list and delete people and connections; full CRUD for connection types
 - **SQLite Database**: Persistent storage with modernc.org/sqlite driver
 - **Interactive Visualization**: Modern React UI with vis-network graph visualization
-- **Real-time Updates**: Graph updates automatically when data changes
+- **Automatic Updates**: Graph and forms reload after every change
 
 ## Project Structure
 
 ```
 conspiracy-board/
 ├── backend/              # Go REST API backend
-│   ├── main.go
+│   ├── main.go           # Router setup and server start
 │   ├── models.go
 │   ├── database.go
 │   ├── migrate.go        # Migration runner
 │   ├── migrations/       # Numbered SQL migrations (embedded, applied on startup)
 │   ├── handlers.go
-│   ├── go.mod
-│   ├── conspiracy-board.exe
-│   └── conspiracy-board.db
+│   ├── *_test.go         # API and migration tests
+│   └── go.mod
 ├── frontend/             # React Vite frontend
 │   ├── src/
 │   │   ├── components/   # React components
@@ -74,36 +75,46 @@ Run the tests with `cd backend && go test ./...`.
 
 ## Backend API
 
-Full REST API documentation available at `backend/README.md` or checkout these endpoints:
+All endpoints are served by the backend on port 8000 (behind nginx on port 8080 in Docker).
+
+- Request and response bodies are JSON.
+- List endpoints always return an array (`[]` when empty), never `null`.
+- Errors are returned as `{"error": "<message>"}` with status `400` (invalid input, e.g.
+  `"name is required"`), `404` (not found), `409` (duplicate name/connection, or a connection
+  type still in use) or `500`.
 
 ### Health Check
 ```
-GET http://localhost:8080/health
+GET    /health
 ```
 
 ### Connection Types
 ```
-POST   /api/connection-types    # Create type
-GET    /api/connection-types    # List types
+POST   /api/connection-types      # Create type {name, description?, color?}
+GET    /api/connection-types      # List types
+PUT    /api/connection-types/:id  # Update type {name, description?, color?}
+DELETE /api/connection-types/:id  # Delete type (409 while connections use it)
 ```
 
 ### People
 ```
-POST   /api/people              # Create person
+POST   /api/people              # Create person {name, description?}
 GET    /api/people              # List people
 GET    /api/people/:id          # Get person
+DELETE /api/people/:id          # Delete person and their connections
 ```
 
 ### Connections
 ```
-POST   /api/connections         # Create connection
-GET    /api/connections         # List connections
+POST   /api/connections             # Create {from_person_id, to_person_id, type_id, description?}
+GET    /api/connections             # List connections
 GET    /api/people/:id/connections  # Get person's connections
+DELETE /api/connections/:id         # Delete connection
 ```
 
 ### Graph
 ```
-GET    /api/graph               # Get full graph structure
+GET    /api/graph               # {nodes: [{person, connections}], types}
 ```
 
 ## Frontend
@@ -111,9 +122,8 @@ GET    /api/graph               # Get full graph structure
 See `frontend/README.md` for detailed frontend documentation.
 
 ### Features
-- Add connection types
-- Add people to the graph
-- Create connections between people
+- Create, edit and delete connection types
+- Add and delete people
+- Create and delete connections between people
 - Interactive graph visualization
-- Real-time updates
-- Responsive design
+- Automatic refresh after changes

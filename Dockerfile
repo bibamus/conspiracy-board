@@ -1,5 +1,5 @@
 # Stage 1: Build frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:24-alpine3.24 AS frontend-builder
 WORKDIR /app/frontend
 
 COPY frontend .
@@ -7,7 +7,7 @@ RUN npm ci
 RUN npm run build
 
 # Stage 2: Build backend
-FROM golang:1.27-alpine AS backend-builder
+FROM golang:1.27-alpine3.24 AS backend-builder
 WORKDIR /app/backend
 
 COPY backend/go.mod backend/go.sum ./
@@ -19,7 +19,7 @@ COPY backend .
 RUN CGO_ENABLED=0 GOOS=linux go build -o conspiracy-board .
 
 # Stage 3: Runtime
-FROM alpine:latest
+FROM alpine:3.24
 RUN apk add --no-cache ca-certificates nginx
 
 WORKDIR /app

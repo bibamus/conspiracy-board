@@ -38,10 +38,18 @@ func main() {
 	}
 	defer db.Close()
 
-	// Initialize API
-	api := NewAPI(db)
+	router := newRouter(NewAPI(db))
 
-	// Setup router
+	// Start server
+	port := 8000
+	fmt.Printf("Starting backend server on http://localhost:%d\n", port)
+	fmt.Printf("Using database: %s\n", dbPath)
+	if err := router.Run(fmt.Sprintf("0.0.0.0:%d", port)); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+func newRouter(api *API) *gin.Engine {
 	router := gin.Default()
 
 	// Apply CORS middleware
@@ -71,11 +79,5 @@ func main() {
 	router.GET("/api/people/:id/connections", api.GetPersonConnections)
 	router.DELETE("/api/connections/:id", api.DeleteConnection)
 
-	// Start server
-	port := 8000
-	fmt.Printf("Starting backend server on http://localhost:%d\n", port)
-	fmt.Printf("Using database: %s\n", dbPath)
-	if err := router.Run(fmt.Sprintf("0.0.0.0:%d", port)); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
+	return router
 }

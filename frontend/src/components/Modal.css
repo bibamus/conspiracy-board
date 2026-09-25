@@ -79,6 +79,16 @@
   color: #333;
 }
 
+.modal-close:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  color: #333;
+}
+
+.modal-content:focus {
+  outline: none;
+}
+
 .modal-body {
   padding: 20px;
   overflow-y: auto;

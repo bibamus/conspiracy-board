@@ -6,15 +6,16 @@ A modern React-based frontend for the Conspiracy Board graph visualization syste
 
 - **Interactive Graph Visualization**: Real-time visualization of the directed graph using vis-network
 - **Add People**: Create new nodes in the graph with names and descriptions
-- **Add Connection Types**: Define custom relationship types (knows, works-with, etc.)
+- **Manage Connection Types**: Create, edit and delete relationship types (knows, works-with, etc.) with a color each
 - **Add Connections**: Create directed edges between people
+- **Delete**: Select a person or connection in the graph to delete it (deleting a person also deletes their connections)
 - **Auto-Refresh**: Graph and forms update automatically when data is added, edited or deleted
 - **Responsive Design**: Works on desktop with clean, modern UI
 
 ## Tech Stack
 
-- **React 18** - UI library
-- **Vite** - Build tool and dev server
+- **React 19** - UI library
+- **Vite 8** - Build tool and dev server
 - **vis-network** - Graph visualization
 - **Axios** - HTTP client for API calls
 - **CSS3** - Modern styling with gradients and animations
@@ -22,7 +23,7 @@ A modern React-based frontend for the Conspiracy Board graph visualization syste
 ## Getting Started
 
 ### Prerequisites
-- Node.js 16+
+- Node.js 20.19+ or 22.12+ (required by Vite 8)
 - npm or yarn
 
 ### Installation
@@ -42,7 +43,7 @@ npm run dev
 
 The frontend will be available at `http://localhost:3000`
 
-**Note**: Make sure the backend is running on `http://localhost:8080`
+**Note**: Make sure the backend is running on `http://localhost:8000`
 
 ### Build for Production
 
@@ -82,19 +83,31 @@ frontend/
 
 ## API Integration
 
-The frontend connects to the backend API at `http://localhost:8080`. All API calls are made through the `api.js` module using axios.
+All API calls are made through the `api.js` module using axios. The base URL is chosen as follows:
+
+1. `VITE_API_URL` if set at build time
+2. `http://localhost:8000/api` when the page is served from `localhost` on a port other than 8000 (e.g. the Vite dev server)
+3. otherwise `<current origin>/api` (the Docker image, where nginx proxies `/api`)
+
+Error responses have the shape `{"error": "<message>"}`; the message is shown in the UI.
 
 ### API Endpoints Used
 
 - `POST /api/connection-types` - Create connection type
 - `GET /api/connection-types` - List all types
+- `PUT /api/connection-types/:id` - Update connection type
+- `DELETE /api/connection-types/:id` - Delete connection type
 - `POST /api/people` - Create person
 - `GET /api/people` - List all people
+- `DELETE /api/people/:id` - Delete person
 - `POST /api/connections` - Create connection
-- `GET /api/connections` - List all connections
+- `DELETE /api/connections/:id` - Delete connection
 - `GET /api/graph` - Get full graph
 
 ## Component Details
+
+### Modal
+Accessible dialog (`role="dialog"`, labelled by its title). Focus moves into the dialog when it opens, stays trapped inside while open and returns to the opening button on close; the rest of the page is `inert` meanwhile. Close with Escape, the × button or a click on the backdrop.
 
 ### ManageConnectionTypes
 Modal content to create, edit and delete connection types. Required: type name. Optional: description, color.
@@ -113,22 +126,23 @@ Form to create directed edges between people. Requires:
 Interactive graph display using vis-network. Features:
 - Pan and zoom with mouse
 - Drag nodes to rearrange
-- Click nodes/edges for more info
-- Physics simulation for automatic layout
+- Hover nodes/edges to see their description
+- Click a node or edge to select it for deletion
+- Edges are colored by connection type (legend above the graph); a pair connected in both directions with the same type is drawn as one undirected edge
 - Refresh button to reload graph
 
 ## Styling
 
 The app uses a modern gradient color scheme:
 - Primary: Purple gradient (#667eea to #764ba2)
-- Accents: Green nodes, red edges
+- Accents: Green nodes, edges colored by connection type
 - Responsive layout with sidebar and main content
 
 ## Development Tips
 
 - Hot Module Replacement (HMR) is enabled for fast development
 - Browser dev tools work seamlessly with Vite
-- API calls are logged to the console
+- Failed API calls are logged to the console
 - Errors are displayed in the UI
 
 ## Browser Support
@@ -140,7 +154,7 @@ The app uses a modern gradient color scheme:
 ## Troubleshooting
 
 **Frontend won't connect to backend?**
-- Ensure backend is running on port 8080
+- Ensure backend is running on port 8000
 - Check browser console for CORS errors
 - Verify API URLs in `src/api.js`
 
@@ -155,7 +169,7 @@ The app uses a modern gradient color scheme:
 
 ## Future Enhancements
 
-- Delete/edit existing people and connections
+- Edit existing people and connections
 - Search and filter
 - Export graph as image
 - Dark mode

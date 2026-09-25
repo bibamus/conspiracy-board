@@ -7,7 +7,7 @@ const getApiBase = () => {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Local development: use localhost:8080
+  // Local development: the Vite dev server talks to the backend on port 8000
   if (window.location.hostname === 'localhost' && window.location.port !== '8000') {
     return 'http://localhost:8000/api';
   }

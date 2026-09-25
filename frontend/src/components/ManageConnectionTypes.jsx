@@ -91,12 +91,12 @@ export function ManageConnectionTypes({ onTypesChanged }) {
   };
 
   if (loading) {
-    return <div className="manage-types-loading">Loading connection types...</div>;
+    return <div className="manage-types-loading" role="status">Loading connection types...</div>;
   }
 
   return (
     <div className="manage-types-modal-content">
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       
       <div className="create-form-section">
         <h3>Create New Type</h3>
@@ -104,6 +104,7 @@ export function ManageConnectionTypes({ onTypesChanged }) {
           <input
             type="text"
             placeholder="Type name (e.g., 'knows', 'works-with')"
+            aria-label="Type name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             disabled={formLoading}
@@ -112,6 +113,7 @@ export function ManageConnectionTypes({ onTypesChanged }) {
           <input
             type="text"
             placeholder="Description (optional)"
+            aria-label="Type description"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             disabled={formLoading}
@@ -131,7 +133,7 @@ export function ManageConnectionTypes({ onTypesChanged }) {
           <button type="submit" disabled={formLoading} className="btn-create">
             {formLoading ? 'Creating...' : 'Create Type'}
           </button>
-          {formError && <p className="error">{formError}</p>}
+          {formError && <p className="error" role="alert">{formError}</p>}
         </form>
       </div>
 
@@ -153,6 +155,7 @@ export function ManageConnectionTypes({ onTypesChanged }) {
                         value={editData.name}
                         onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                         placeholder="Name"
+                        aria-label="Name"
                         className="editor-input"
                       />
                       <input
@@ -160,6 +163,7 @@ export function ManageConnectionTypes({ onTypesChanged }) {
                         value={editData.description}
                         onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                         placeholder="Description"
+                        aria-label="Description"
                         className="editor-input"
                       />
                     </div>
@@ -175,8 +179,8 @@ export function ManageConnectionTypes({ onTypesChanged }) {
                         />
                       </div>
                       <div className="editor-buttons">
-                        <button onClick={() => handleSave(type.id)} className="btn-save">Save</button>
-                        <button onClick={() => setEditingId(null)} className="btn-cancel">Cancel</button>
+                        <button type="button" onClick={() => handleSave(type.id)} className="btn-save">Save</button>
+                        <button type="button" onClick={() => setEditingId(null)} className="btn-cancel">Cancel</button>
                       </div>
                     </div>
                   </div>
@@ -190,12 +194,13 @@ export function ManageConnectionTypes({ onTypesChanged }) {
                       className="type-color-preview"
                       style={{ backgroundColor: type.color || '#666' }}
                       title={type.color}
+                      aria-hidden="true"
                     />
                     <div className="type-actions">
-                      <button onClick={() => handleEdit(type)} className="btn-edit">
+                      <button type="button" onClick={() => handleEdit(type)} className="btn-edit" aria-label={`Edit ${type.name}`}>
                         Edit
                       </button>
-                      <button onClick={() => handleDelete(type.id)} className="btn-delete">
+                      <button type="button" onClick={() => handleDelete(type.id)} className="btn-delete" aria-label={`Delete ${type.name}`}>
                         Delete
                       </button>
                     </div>

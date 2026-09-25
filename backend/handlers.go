@@ -1,13 +1,69 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 )
+
+// Report validation errors using JSON field names instead of Go struct names.
+func init() {
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterTagNameFunc(func(f reflect.StructField) string {
+			name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
+			if name == "-" {
+				return ""
+			}
+			return name
+		})
+	}
+}
+
+// bindJSON decodes and validates the request body. On failure it writes a
+// 400 response with a user-facing message and returns false.
+func bindJSON(c *gin.Context, dst any) bool {
+	if err := c.ShouldBindJSON(dst); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": bindErrorMessage(err)})
+		return false
+	}
+	return true
+}
+
+func bindErrorMessage(err error) string {
+	var validationErrs validator.ValidationErrors
+	var typeErr *json.UnmarshalTypeError
+	var syntaxErr *json.SyntaxError
+
+	switch {
+	case errors.As(err, &validationErrs):
+		msgs := make([]string, 0, len(validationErrs))
+		for _, fe := range validationErrs {
+			if fe.Tag() == "required" {
+				msgs = append(msgs, fe.Field()+" is required")
+			} else {
+				msgs = append(msgs, fe.Field()+" is invalid")
+			}
+		}
+		return strings.Join(msgs, "; ")
+	case errors.As(err, &typeErr):
+		if typeErr.Field != "" {
+			return typeErr.Field + " must be of type " + typeErr.Type.String()
+		}
+		return "request body has an invalid type"
+	case errors.As(err, &syntaxErr), errors.Is(err, io.EOF), errors.Is(err, io.ErrUnexpectedEOF):
+		return "request body must be valid JSON"
+	}
+	return "invalid request body"
+}
 
 type API struct {
 	db *Database
@@ -55,8 +111,7 @@ type ConnectionTypeRequest struct {
 
 func (api *API) CreateConnectionType(c *gin.Context) {
 	var req ConnectionTypeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !bindJSON(c, &req) {
 		return
 	}
 
@@ -90,8 +145,7 @@ func (api *API) UpdateConnectionType(c *gin.Context) {
 	}
 
 	var req ConnectionTypeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !bindJSON(c, &req) {
 		return
 	}
 
@@ -131,8 +185,7 @@ type CreatePersonRequest struct {
 
 func (api *API) CreatePerson(c *gin.Context) {
 	var req CreatePersonRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !bindJSON(c, &req) {
 		return
 	}
 
@@ -195,8 +248,7 @@ type CreateConnectionRequest struct {
 
 func (api *API) CreateConnection(c *gin.Context) {
 	var req CreateConnectionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !bindJSON(c, &req) {
 		return
 	}
 

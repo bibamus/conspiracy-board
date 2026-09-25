@@ -160,7 +160,7 @@ func queryConnectionTypes(q querier) ([]ConnectionType, error) {
 	}
 	defer rows.Close()
 
-	var types []ConnectionType
+	types := []ConnectionType{}
 	for rows.Next() {
 		var ct ConnectionType
 		if err := rows.Scan(&ct.ID, &ct.Name, &ct.Description, &ct.Color, &ct.CreatedAt); err != nil {
@@ -233,7 +233,7 @@ func queryPeople(q querier) ([]Person, error) {
 	}
 	defer rows.Close()
 
-	var people []Person
+	people := []Person{}
 	for rows.Next() {
 		var p Person
 		if err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.CreatedAt, &p.UpdatedAt); err != nil {
@@ -300,7 +300,7 @@ func queryConnections(q querier, query string, args ...any) ([]Connection, error
 	}
 	defer rows.Close()
 
-	var connections []Connection
+	connections := []Connection{}
 	for rows.Next() {
 		var c Connection
 		if err := rows.Scan(&c.ID, &c.FromID, &c.ToID, &c.TypeID, &c.Description, &c.CreatedAt, &c.UpdatedAt); err != nil {
@@ -347,7 +347,7 @@ func (db *Database) GetGraph() (*Graph, error) {
 
 	byPerson := make(map[int]*GraphNode, len(people))
 	for _, p := range people {
-		node := &GraphNode{Person: p}
+		node := &GraphNode{Person: p, Connections: []Connection{}}
 		byPerson[p.ID] = node
 		graph.Nodes = append(graph.Nodes, node)
 	}

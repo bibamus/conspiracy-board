@@ -33,14 +33,16 @@ The application will be available at:
 
 ## How It Works
 
-1. **Stage 1** - Builds React frontend with Vite
-2. **Stage 2** - Builds Go backend binary
-3. **Stage 3** - Creates minimal Alpine runtime with:
-   - Go backend binary
-   - Frontend static files in `./public` directory
-   - SQLite database
+1. **Stage 1** - Builds the React frontend with Vite (`node:24-alpine`)
+2. **Stage 2** - Builds the Go backend binary (`golang:1.27-alpine`, pure Go, no cgo)
+3. **Stage 3** - Creates a minimal Alpine runtime containing:
+   - the Go backend binary, listening on port 8000 inside the container only
+   - the frontend static files in `/app/public`
+   - nginx, listening on port 8080
 
-The backend Gin server serves both the API and static frontend files.
+`entrypoint.sh` starts the backend in the background and then runs nginx in the foreground.
+nginx serves the static frontend and proxies `/api/` and `/health` to the backend on
+`localhost:8000`. Only port 8080 is exposed.
 
 ## Container Management
 
@@ -48,8 +50,11 @@ The backend Gin server serves both the API and static frontend files.
 # View running containers
 docker ps
 
-# View logs
+# View nginx logs
 docker logs <container-id>
+
+# View backend logs (written to a file inside the container)
+docker exec <container-id> cat /tmp/backend.log
 
 # Stop container
 docker stop <container-id>
@@ -84,11 +89,11 @@ docker run -v /path/to/data:/data -p 8080:8080 conspiracy-board:latest
 
 ## Development Workflow
 
-For local development without Docker:
+For local development without Docker (requires Go 1.27+ and Node.js 20.19+ or 22.12+):
 ```bash
 # Terminal 1: Run backend
 cd backend
-go run main.go database.go handlers.go models.go
+go run .
 
 # Terminal 2: Run frontend
 cd frontend
@@ -97,5 +102,5 @@ npm run dev
 ```
 
 Access at:
-- Frontend: http://localhost:5173 (Vite dev server)
-- Backend: http://localhost:8080
+- Frontend: http://localhost:3000 (Vite dev server)
+- Backend: http://localhost:8000
