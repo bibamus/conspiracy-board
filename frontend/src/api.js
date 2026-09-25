@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// Use the same domain/origin as the application is running on
+// Falls back to localhost:8080/api if VITE_API_URL is set
+const API_BASE = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
 
 export const api = axios.create({
   baseURL: API_BASE,
