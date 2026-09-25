@@ -7,8 +7,8 @@ A modern React-based frontend for the Conspiracy Board graph visualization syste
 - **Interactive Graph Visualization**: Real-time visualization of the directed graph using vis-network
 - **Add People**: Create new nodes in the graph with names and descriptions
 - **Add Connection Types**: Define custom relationship types (knows, works-with, etc.)
-- **Add Connections**: Create directed edges between people with optional weights
-- **Auto-Refresh**: Graph updates automatically when new data is added
+- **Add Connections**: Create directed edges between people
+- **Auto-Refresh**: Graph and forms update automatically when data is added, edited or deleted
 - **Responsive Design**: Works on desktop with clean, modern UI
 
 ## Tech Stack
@@ -108,7 +108,6 @@ Form to create directed edges between people. Requires:
 - To Person (select dropdown)
 - Connection Type (select dropdown)
 - Optional: Description
-- Optional: Weight (0-1)
 
 ### GraphVisualization
 Interactive graph display using vis-network. Features:

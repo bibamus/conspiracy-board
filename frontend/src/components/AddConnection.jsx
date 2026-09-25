@@ -11,23 +11,39 @@ export function AddConnection({ onConnectionAdded, refreshTrigger }) {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    loadData();
-  }, [refreshTrigger]);
+    let cancelled = false;
 
-  const loadData = async () => {
-    try {
-      const [peopleRes, typesRes] = await Promise.all([
-        apiClient.getPeople(),
-        apiClient.getConnectionTypes(),
-      ]);
-      setPeople(peopleRes.data || []);
-      setTypes(typesRes.data || []);
-    } catch (err) {
-      setError('Failed to load data');
-    }
-  };
+    const loadData = async () => {
+      try {
+        const [peopleRes, typesRes] = await Promise.all([
+          apiClient.getPeople(),
+          apiClient.getConnectionTypes(),
+        ]);
+        if (cancelled) return;
+        const nextPeople = peopleRes.data || [];
+        const nextTypes = typesRes.data || [];
+        setPeople(nextPeople);
+        setTypes(nextTypes);
+
+        // Drop selections that point at records deleted elsewhere.
+        const keepIfExists = (list) => (id) => (list.some((item) => String(item.id) === id) ? id : '');
+        setFromPersonId(keepIfExists(nextPeople));
+        setToPersonId(keepIfExists(nextPeople));
+        setTypeId(keepIfExists(nextTypes));
+        setLoadError('');
+      } catch (err) {
+        if (!cancelled) setLoadError('Failed to load data');
+      }
+    };
+
+    loadData();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTrigger]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -111,6 +127,7 @@ export function AddConnection({ onConnectionAdded, refreshTrigger }) {
         <button type="submit" disabled={loading}>
           {loading ? 'Adding...' : 'Add Connection'}
         </button>
+        {loadError && <p className="error">{loadError}</p>}
         {error && <p className="error">{error}</p>}
       </form>
     </div>

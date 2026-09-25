@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiClient } from '../api';
 import './ManageConnectionTypes.css';
 
-export function ManageConnectionTypes() {
+export function ManageConnectionTypes({ onTypesChanged }) {
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,6 +42,7 @@ export function ManageConnectionTypes() {
       await apiClient.createConnectionType(formData.name, formData.description, formData.color);
       setFormData({ name: '', description: '', color: '#FF6B6B' });
       loadTypes();
+      onTypesChanged?.();
     } catch (err) {
       setFormError(err.response?.data?.error || 'Failed to create connection type');
     } finally {
@@ -67,9 +68,11 @@ export function ManageConnectionTypes() {
         editData.color
       );
       setEditingId(null);
+      setError('');
       loadTypes();
+      onTypesChanged?.();
     } catch (err) {
-      setError('Failed to update connection type');
+      setError(err.response?.data?.error || 'Failed to update connection type');
     }
   };
 
@@ -79,9 +82,11 @@ export function ManageConnectionTypes() {
     }
     try {
       await apiClient.deleteConnectionType(id);
+      setError('');
       loadTypes();
+      onTypesChanged?.();
     } catch (err) {
-      setError('Failed to delete connection type');
+      setError(err.response?.data?.error || 'Failed to delete connection type');
     }
   };
 

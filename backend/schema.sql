@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS connections (
     to_person_id INTEGER NOT NULL,
     type_id INTEGER NOT NULL,
     description TEXT,
-    weight REAL DEFAULT 1.0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (from_person_id) REFERENCES people(id) ON DELETE CASCADE,

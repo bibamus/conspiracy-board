@@ -4,9 +4,10 @@ import {DataSet} from 'vis-data';
 import {apiClient} from '../api';
 import './GraphVisualization.css';
 
-export function GraphVisualization() {
+export function GraphVisualization({refreshTrigger, onDataChanged}) {
     const networkRef = useRef(null);
     const networkInstanceRef = useRef(null);
+    const latestRequestRef = useRef(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [selectedEdgeId, setSelectedEdgeId] = useState(null);
@@ -14,8 +15,8 @@ export function GraphVisualization() {
     const [connectionTypes, setConnectionTypes] = useState([]);
 
     useEffect(() => {
-        loadGraph();
         return () => {
+            latestRequestRef.current++;
             if (networkInstanceRef.current) {
                 networkInstanceRef.current.destroy();
                 networkInstanceRef.current = null;
@@ -23,25 +24,33 @@ export function GraphVisualization() {
         };
     }, []);
 
+    useEffect(() => {
+        loadGraph();
+    }, [refreshTrigger]);
+
     const loadGraph = async () => {
+        // Only the most recent request may render, so overlapping reloads can't
+        // overwrite newer data with an older response.
+        const requestId = ++latestRequestRef.current;
         setLoading(true);
         setError('');
         setSelectedEdgeId(null);
         setSelectedNodeId(null);
         try {
             const response = await apiClient.getGraph();
-            const graph = response.data;
-            visualizeGraph(graph);
+            if (requestId !== latestRequestRef.current) return;
+            visualizeGraph(response.data);
         } catch (err) {
+            if (requestId !== latestRequestRef.current) return;
             console.error('Graph loading error:', err);
-            setError('Failed to load graph: ' + (err.message || 'Unknown error'));
+            setError('Failed to load graph: ' + (err.response?.data?.error || err.message || 'Unknown error'));
         } finally {
-            setLoading(false);
+            if (requestId === latestRequestRef.current) setLoading(false);
         }
     };
 
-    const handleRefresh = async () => {
-        await loadGraph();
+    const handleRefresh = () => {
+        onDataChanged();
     };
 
     const visualizeGraph = (graph) => {
@@ -204,9 +213,9 @@ export function GraphVisualization() {
         try {
             await apiClient.deleteConnection(selectedEdgeId);
             setSelectedEdgeId(null);
-            loadGraph();
+            onDataChanged();
         } catch (err) {
-            setError('Failed to delete connection');
+            setError(err.response?.data?.error || 'Failed to delete connection');
             console.error(err);
         }
     };
@@ -221,9 +230,9 @@ export function GraphVisualization() {
         try {
             await apiClient.deletePerson(selectedNodeId);
             setSelectedNodeId(null);
-            loadGraph();
+            onDataChanged();
         } catch (err) {
-            setError('Failed to delete person');
+            setError(err.response?.data?.error || 'Failed to delete person');
             console.error(err);
         }
     };

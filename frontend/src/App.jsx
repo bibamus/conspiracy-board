@@ -7,18 +7,13 @@ import { Modal } from './components/Modal';
 import { GraphVisualization } from './components/GraphVisualization';
 
 function App() {
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [connectionRefresh, setConnectionRefresh] = useState(0);
+  // Bumped after any mutation so every view reloads from the server.
+  const [dataVersion, setDataVersion] = useState(0);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
   const handleDataChanged = useCallback(() => {
-    setRefreshKey((prev) => prev + 1);
+    setDataVersion((prev) => prev + 1);
   }, []);
-
-  const handlePersonAdded = useCallback(() => {
-    setConnectionRefresh((prev) => prev + 1);
-    handleDataChanged();
-  }, [handleDataChanged]);
 
   return (
     <div className="app">
@@ -31,13 +26,13 @@ function App() {
             >
               ➕ Manage Connection Types
             </button>
-            <AddPerson onPersonAdded={handlePersonAdded} />
-            <AddConnection onConnectionAdded={handleDataChanged} refreshTrigger={connectionRefresh} />
+            <AddPerson onPersonAdded={handleDataChanged} />
+            <AddConnection onConnectionAdded={handleDataChanged} refreshTrigger={dataVersion} />
           </div>
         </aside>
 
         <main className="main">
-          <GraphVisualization key={refreshKey} />
+          <GraphVisualization refreshTrigger={dataVersion} onDataChanged={handleDataChanged} />
         </main>
       </div>
 
@@ -46,7 +41,7 @@ function App() {
         onClose={() => setIsManageModalOpen(false)}
         title="Connection Types"
       >
-        <ManageConnectionTypes />
+        <ManageConnectionTypes onTypesChanged={handleDataChanged} />
       </Modal>
     </div>
   );

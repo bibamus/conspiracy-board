@@ -26,7 +26,6 @@ npm run dev
 - **Typed Connections**: Define custom connection types (e.g., "knows", "works-with", "investigated-by")
 - **REST API**: Full CRUD operations for managing the graph
 - **SQLite Database**: Persistent storage with modernc.org/sqlite driver
-- **Weight Support**: Connections can have weights (0-1) to indicate relationship strength
 - **Interactive Visualization**: Modern React UI with vis-network graph visualization
 - **Real-time Updates**: Graph updates automatically when data changes
 
@@ -96,7 +95,7 @@ See `frontend/README.md` for detailed frontend documentation.
 ### Features
 - Add connection types
 - Add people to the graph
-- Create connections between people with weights
+- Create connections between people
 - Interactive graph visualization
 - Real-time updates
 - Responsive design

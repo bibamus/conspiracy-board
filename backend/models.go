@@ -24,7 +24,6 @@ type Connection struct {
 	ToID        int       `json:"to_person_id"`
 	TypeID      int       `json:"type_id"`
 	Description string    `json:"description"`
-	Weight      float64   `json:"weight"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
