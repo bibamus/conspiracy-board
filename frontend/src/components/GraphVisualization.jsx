@@ -4,7 +4,7 @@ import {DataSet} from 'vis-data';
 import {apiClient} from '../api';
 import './GraphVisualization.css';
 
-export function GraphVisualization() {
+export function GraphVisualization({ onRefresh }) {
     const networkRef = useRef(null);
     const networkInstanceRef = useRef(null);
     const [loading, setLoading] = useState(true);
@@ -30,6 +30,13 @@ export function GraphVisualization() {
             setError('Failed to load graph: ' + (err.message || 'Unknown error'));
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRefresh = async () => {
+        await loadGraph();
+        if (onRefresh) {
+            onRefresh();
         }
     };
 
@@ -305,7 +312,7 @@ export function GraphVisualization() {
 
             {loading && <p>Loading graph...</p>}
             {error && <p className="error">{error}</p>}
-            <button onClick={loadGraph} className="refresh-btn">
+            <button onClick={handleRefresh} className="refresh-btn">
                 Refresh
             </button>
 

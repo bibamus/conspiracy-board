@@ -13,6 +13,7 @@ function App() {
 
   const handleDataChanged = useCallback(() => {
     setRefreshKey((prev) => prev + 1);
+    setConnectionRefresh((prev) => prev + 1);
   }, []);
 
   const handlePersonAdded = useCallback(() => {
@@ -37,7 +38,7 @@ function App() {
         </aside>
 
         <main className="main">
-          <GraphVisualization key={refreshKey} />
+          <GraphVisualization key={refreshKey} onRefresh={handleDataChanged} />
         </main>
       </div>
 
