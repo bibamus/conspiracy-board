@@ -28,6 +28,7 @@ WORKDIR /app
 
 # Create data directory
 RUN mkdir -p /data
+VOLUME /data
 
 # Set environment variables
 ENV DB_PATH=/data/data.db

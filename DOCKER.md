@@ -19,11 +19,11 @@ docker build -t conspiracy-board:latest .
 # Basic run
 docker run -p 8080:8080 conspiracy-board:latest
 
-# With database persistence
-docker run -p 8080:8080 -v $(pwd)/conspiracy-board.db:/app/conspiracy-board.db conspiracy-board:latest
+# With database persistence (named volume)
+docker run -p 8080:8080 -v conspiracy-data:/data conspiracy-board:latest
 
 # Run in background
-docker run -d -p 8080:8080 -v $(pwd)/conspiracy-board.db:/app/conspiracy-board.db conspiracy-board:latest
+docker run -d -p 8080:8080 -v conspiracy-data:/data conspiracy-board:latest
 ```
 
 The application will be available at:
@@ -64,6 +64,7 @@ docker rmi conspiracy-board:latest
 ## Environment Variables
 
 - `GIN_MODE` - Set to `release` for production (optional)
+- `DB_PATH` - SQLite database path (default in container: `/data/data.db`)
 
 Example:
 ```bash
@@ -72,9 +73,13 @@ docker run -e GIN_MODE=release -p 8080:8080 conspiracy-board:latest
 
 ## Database Persistence
 
-Mount the database file to persist data:
+The database is stored at `/data/data.db` (configurable via `DB_PATH`). Mount a volume or
+host **directory** at `/data` to persist it (SQLite WAL mode also creates `-wal`/`-shm`
+files next to the database, so mount the directory, not the single file):
 ```bash
-docker run -v /path/to/conspiracy-board.db:/app/conspiracy-board.db -p 8080:8080 conspiracy-board:latest
+docker run -v conspiracy-data:/data -p 8080:8080 conspiracy-board:latest
+# or a host directory
+docker run -v /path/to/data:/data -p 8080:8080 conspiracy-board:latest
 ```
 
 ## Development Workflow

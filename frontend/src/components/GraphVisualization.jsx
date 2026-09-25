@@ -15,6 +15,12 @@ export function GraphVisualization() {
 
     useEffect(() => {
         loadGraph();
+        return () => {
+            if (networkInstanceRef.current) {
+                networkInstanceRef.current.destroy();
+                networkInstanceRef.current = null;
+            }
+        };
     }, []);
 
     const loadGraph = async () => {

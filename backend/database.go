@@ -12,7 +12,8 @@ type Database struct {
 }
 
 func NewDatabase(path string) (*Database, error) {
-	dsn := fmt.Sprintf("file:%s?cache=shared&mode=rwc&journal=wal", path)
+	// Pragmas are applied by modernc.org/sqlite to every pooled connection.
+	dsn := fmt.Sprintf("file:%s?mode=rwc&_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)", path)
 	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
@@ -118,8 +119,17 @@ func (db *Database) GetConnectionType(id int) (*ConnectionType, error) {
 	return &ct, nil
 }
 
+// querier is satisfied by both *sql.DB and *sql.Tx.
+type querier interface {
+	Query(query string, args ...any) (*sql.Rows, error)
+}
+
 func (db *Database) GetAllConnectionTypes() ([]ConnectionType, error) {
-	rows, err := db.conn.Query("SELECT id, name, description, color, created_at FROM connection_types ORDER BY name")
+	return queryConnectionTypes(db.conn)
+}
+
+func queryConnectionTypes(q querier) ([]ConnectionType, error) {
+	rows, err := q.Query("SELECT id, name, description, color, created_at FROM connection_types ORDER BY name")
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +198,11 @@ func (db *Database) GetPerson(id int) (*Person, error) {
 }
 
 func (db *Database) GetAllPeople() ([]Person, error) {
-	rows, err := db.conn.Query("SELECT id, name, description, created_at, updated_at FROM people ORDER BY name")
+	return queryPeople(db.conn)
+}
+
+func queryPeople(q querier) ([]Person, error) {
+	rows, err := q.Query("SELECT id, name, description, created_at, updated_at FROM people ORDER BY name")
 	if err != nil {
 		return nil, err
 	}
@@ -248,32 +262,21 @@ func (db *Database) GetConnection(id int) (*Connection, error) {
 	return &c, nil
 }
 
+const connectionColumns = "SELECT id, from_person_id, to_person_id, type_id, description, weight, created_at, updated_at FROM connections"
+
 func (db *Database) GetConnectionsByPerson(personID int) ([]Connection, error) {
-	rows, err := db.conn.Query(
-		"SELECT id, from_person_id, to_person_id, type_id, description, weight, created_at, updated_at FROM connections WHERE from_person_id = ? OR to_person_id = ? ORDER BY created_at DESC",
+	return queryConnections(db.conn,
+		connectionColumns+" WHERE from_person_id = ? OR to_person_id = ? ORDER BY created_at DESC",
 		personID, personID,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var connections []Connection
-	for rows.Next() {
-		var c Connection
-		if err := rows.Scan(&c.ID, &c.FromID, &c.ToID, &c.TypeID, &c.Description, &c.Weight, &c.CreatedAt, &c.UpdatedAt); err != nil {
-			return nil, err
-		}
-		connections = append(connections, c)
-	}
-
-	return connections, rows.Err()
 }
 
 func (db *Database) GetAllConnections() ([]Connection, error) {
-	rows, err := db.conn.Query(
-		"SELECT id, from_person_id, to_person_id, type_id, description, weight, created_at, updated_at FROM connections ORDER BY created_at DESC",
-	)
+	return queryConnections(db.conn, connectionColumns+" ORDER BY created_at DESC")
+}
+
+func queryConnections(q querier, query string, args ...any) ([]Connection, error) {
+	rows, err := q.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -296,16 +299,28 @@ func (db *Database) DeleteConnection(id int) error {
 	return err
 }
 
-// GetGraph returns the full graph
+// GetGraph returns the full graph using a fixed number of queries inside a
+// single transaction, so people, types and connections form a consistent snapshot.
 func (db *Database) GetGraph() (*Graph, error) {
-	people, err := db.GetAllPeople()
+	tx, err := db.conn.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	people, err := queryPeople(tx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch people: %w", err)
 	}
 
-	types, err := db.GetAllConnectionTypes()
+	types, err := queryConnectionTypes(tx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch connection types: %w", err)
+	}
+
+	connections, err := queryConnections(tx, connectionColumns+" ORDER BY created_at DESC")
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch connections: %w", err)
 	}
 
 	graph := &Graph{
@@ -313,17 +328,24 @@ func (db *Database) GetGraph() (*Graph, error) {
 		Types: types,
 	}
 
+	byPerson := make(map[int]*GraphNode, len(people))
 	for _, p := range people {
-		connections, err := db.GetConnectionsByPerson(p.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch connections for person %d: %w", p.ID, err)
-		}
-
-		node := &GraphNode{
-			Person:      p,
-			Connections: connections,
-		}
+		node := &GraphNode{Person: p}
+		byPerson[p.ID] = node
 		graph.Nodes = append(graph.Nodes, node)
+	}
+
+	// Each connection is listed under both endpoints (once for self-loops),
+	// matching the previous per-person query semantics.
+	for _, c := range connections {
+		if node, ok := byPerson[c.FromID]; ok {
+			node.Connections = append(node.Connections, c)
+		}
+		if c.ToID != c.FromID {
+			if node, ok := byPerson[c.ToID]; ok {
+				node.Connections = append(node.Connections, c)
+			}
+		}
 	}
 
 	return graph, nil
