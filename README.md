@@ -39,6 +39,7 @@ conspiracy-board/
 │   ├── models.go
 │   ├── database.go
 │   ├── handlers.go
+│   ├── schema.sql        # SQL schema (embedded and applied on startup)
 │   ├── go.mod
 │   ├── conspiracy-board.exe
 │   └── conspiracy-board.db
@@ -51,8 +52,6 @@ conspiracy-board/
 │   ├── package.json
 │   ├── vite.config.js
 │   └── index.html
-├── db/
-│   └── schema.sql        # SQL schema reference
 └── README.md
 ```
 

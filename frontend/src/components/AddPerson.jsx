@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiClient } from '../api';
-import './AddPerson.css';
+import './FormCard.css';
 
 export function AddPerson({ onPersonAdded }) {
   const [name, setName] = useState('');

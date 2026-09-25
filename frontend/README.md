@@ -66,9 +66,10 @@ frontend/
 │   ├── components/
 │   │   ├── AddPerson.jsx           # Form to add people
 │   │   ├── AddConnection.jsx       # Form to add connections
-│   │   ├── AddConnectionType.jsx   # Form to add connection types
+│   │   ├── ManageConnectionTypes.jsx # Create/edit/delete connection types
+│   │   ├── Modal.jsx               # Generic modal dialog
 │   │   ├── GraphVisualization.jsx  # Graph visualization component
-│   │   └── *.css                   # Component styles
+│   │   └── *.css                   # Component styles (FormCard.css is shared by the forms)
 │   ├── api.js                      # API client with axios
 │   ├── App.jsx                     # Main app component
 │   ├── App.css                     # App styles
@@ -95,8 +96,8 @@ The frontend connects to the backend API at `http://localhost:8080`. All API cal
 
 ## Component Details
 
-### AddConnectionType
-Form to create new connection types. Required: type name. Optional: description.
+### ManageConnectionTypes
+Modal content to create, edit and delete connection types. Required: type name. Optional: description, color.
 
 ### AddPerson
 Form to create new people nodes. Required: name. Optional: description.

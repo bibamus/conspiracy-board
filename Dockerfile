@@ -10,15 +10,13 @@ RUN npm run build
 FROM golang:1.27-alpine AS backend-builder
 WORKDIR /app/backend
 
-RUN apk add --no-cache gcc musl-dev
-
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 
 COPY backend .
 
-# Build the binary
-RUN CGO_ENABLED=1 GOOS=linux go build -o conspiracy-board .
+# Build the binary (modernc.org/sqlite is pure Go, so no cgo toolchain is needed)
+RUN CGO_ENABLED=0 GOOS=linux go build -o conspiracy-board .
 
 # Stage 3: Runtime
 FROM alpine:latest
@@ -36,8 +34,9 @@ ENV DB_PATH=/data/data.db
 # Copy nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create entrypoint script
-RUN printf '#!/bin/sh\nset -e\n\necho "Starting backend on port 8000..."\n./conspiracy-board > /tmp/backend.log 2>&1 &\nBACKEND_PID=$!\necho "Backend PID: $BACKEND_PID"\n\nsleep 3\n\nif ! kill -0 $BACKEND_PID 2>/dev/null; then\n    echo "ERROR: Backend failed to start!"\n    cat /tmp/backend.log\n    exit 1\nfi\n\necho "Backend started successfully"\necho "Starting nginx on port 8080..."\n\nexec nginx -c /etc/nginx/nginx.conf -g "daemon off;"\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# Copy entrypoint script (strip CR in case it was checked out with CRLF line endings)
+COPY entrypoint.sh /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Copy backend binary
 COPY --from=backend-builder /app/backend/conspiracy-board .

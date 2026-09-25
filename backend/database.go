@@ -2,12 +2,16 @@ package main
 
 import (
 	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
 
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 )
+
+//go:embed schema.sql
+var schema string
 
 type Database struct {
 	conn *sql.DB
@@ -37,45 +41,6 @@ func NewDatabase(path string) (*Database, error) {
 }
 
 func (db *Database) initSchema() error {
-	schema := `
-	CREATE TABLE IF NOT EXISTS connection_types (
-	    id INTEGER PRIMARY KEY AUTOINCREMENT,
-	    name TEXT UNIQUE NOT NULL,
-	    description TEXT,
-	    color TEXT DEFAULT '#666',
-	    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS people (
-	    id INTEGER PRIMARY KEY AUTOINCREMENT,
-	    name TEXT UNIQUE NOT NULL,
-	    description TEXT,
-	    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS connections (
-	    id INTEGER PRIMARY KEY AUTOINCREMENT,
-	    from_person_id INTEGER NOT NULL,
-	    to_person_id INTEGER NOT NULL,
-	    type_id INTEGER NOT NULL,
-	    description TEXT,
-	    weight REAL DEFAULT 1.0,
-	    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	    FOREIGN KEY (from_person_id) REFERENCES people(id) ON DELETE CASCADE,
-	    FOREIGN KEY (to_person_id) REFERENCES people(id) ON DELETE CASCADE,
-	    FOREIGN KEY (type_id) REFERENCES connection_types(id) ON DELETE RESTRICT
-	);
-
-	-- At most one connection per direction (A->B), regardless of type.
-	-- An index (not a table constraint) so it also applies to existing databases.
-	CREATE UNIQUE INDEX IF NOT EXISTS idx_connections_pair ON connections(from_person_id, to_person_id);
-	CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_person_id);
-	CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_person_id);
-	CREATE INDEX IF NOT EXISTS idx_connections_type ON connections(type_id);
-	`
-
 	_, err := db.conn.Exec(schema)
 	if err != nil {
 		return err

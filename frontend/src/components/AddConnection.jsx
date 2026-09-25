@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../api';
-import './AddConnection.css';
+import './FormCard.css';
 
 export function AddConnection({ onConnectionAdded, refreshTrigger }) {
   const [people, setPeople] = useState([]);
