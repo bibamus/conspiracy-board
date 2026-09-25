@@ -11,6 +11,7 @@ export function GraphVisualization() {
     const [error, setError] = useState('');
     const [selectedEdgeId, setSelectedEdgeId] = useState(null);
     const [selectedNodeId, setSelectedNodeId] = useState(null);
+    const [connectionTypes, setConnectionTypes] = useState([]);
 
     useEffect(() => {
         loadGraph();
@@ -40,6 +41,11 @@ export function GraphVisualization() {
     const visualizeGraph = (graph) => {
         const nodes = new DataSet();
         const edges = new DataSet();
+
+        // Store connection types for legend
+        if (graph.types && Array.isArray(graph.types)) {
+            setConnectionTypes(graph.types);
+        }
 
         // Create a map of type IDs to colors for quick lookup
         const typeColorMap = {};
@@ -317,6 +323,23 @@ export function GraphVisualization() {
             <button onClick={handleRefresh} className="refresh-btn">
                 Refresh
             </button>
+
+            {connectionTypes.length > 0 && (
+                <div className="legend">
+                    <h3>Connection Types</h3>
+                    <div className="legend-items">
+                        {connectionTypes.map((type) => (
+                            <div key={type.id} className="legend-item">
+                                <div 
+                                    className="legend-color" 
+                                    style={{ backgroundColor: type.color || '#666' }}
+                                ></div>
+                                <span>{type.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div ref={networkRef} className="network"/>
         </div>
