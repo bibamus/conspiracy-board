@@ -60,35 +60,133 @@ export function GraphVisualization() {
 
     // Add edges (with deduplication)
     const addedEdges = new Set();
+    const connectionPairs = new Map(); // Track bidirectional connections
+    
+    // First pass: collect all connections and detect bidirectional pairs
+    const allConnections = [];
     if (graph.nodes && Array.isArray(graph.nodes)) {
       graph.nodes.forEach((node) => {
         if (node.connections && Array.isArray(node.connections)) {
           node.connections.forEach((conn) => {
             if (!addedEdges.has(conn.id)) {
               addedEdges.add(conn.id);
-              edges.add({
-                id: conn.id,
-                from: conn.from_person_id,
-                to: conn.to_person_id,
-                title: conn.description || `Connection ${conn.id}`,
-                width: 2,
-                color: typeColorMap[conn.type_id] || '#666',
-                arrows: {
-                  to: {
-                    enabled: true,
-                    scaleFactor: 0.5,
-                  },
-                },
-                highlight: {
-                  color: typeColorMap[conn.type_id] || '#666',
-                  width: 4,
-                },
-              });
+              allConnections.push(conn);
             }
           });
         }
       });
     }
+
+    // Identify bidirectional connection pairs
+    allConnections.forEach((conn) => {
+      const reverse = allConnections.find(
+        (c) => c.from_person_id === conn.to_person_id && c.to_person_id === conn.from_person_id
+      );
+      if (reverse) {
+        const key = [conn.from_person_id, conn.to_person_id].sort().join('-');
+        if (!connectionPairs.has(key)) {
+          connectionPairs.set(key, [conn, reverse]);
+        }
+      }
+    });
+
+    // Add edges with smart handling for bidirectional connections
+    const processedPairs = new Set();
+    allConnections.forEach((conn) => {
+      const key = [conn.from_person_id, conn.to_person_id].sort().join('-');
+      const pairData = connectionPairs.get(key);
+      const isBidirectional = pairData && pairData.length > 1;
+      
+      if (isBidirectional) {
+        // Skip if we already processed this pair
+        if (processedPairs.has(key)) return;
+        processedPairs.add(key);
+        
+        const [conn1, conn2] = pairData;
+        const sameType = conn1.type_id === conn2.type_id;
+        
+        if (sameType) {
+          // Same type: show as single undirected edge
+          edges.add({
+            id: conn1.id, // Use first connection's ID
+            from: conn1.from_person_id,
+            to: conn1.to_person_id,
+            title: conn1.description || `Connection ${conn1.id}`,
+            width: 2,
+            color: typeColorMap[conn1.type_id] || '#666',
+            arrows: {
+              to: { enabled: false }, // No arrows for undirected
+            },
+            smooth: false,
+            highlight: {
+              color: typeColorMap[conn1.type_id] || '#666',
+              width: 4,
+            },
+          });
+        } else {
+          // Different types: show both with curves
+          edges.add({
+            id: conn1.id,
+            from: conn1.from_person_id,
+            to: conn1.to_person_id,
+            title: conn1.description || `Connection ${conn1.id}`,
+            width: 2,
+            color: typeColorMap[conn1.type_id] || '#666',
+            arrows: {
+              to: {
+                enabled: true,
+                scaleFactor: 0.5,
+              },
+            },
+            smooth: { type: 'curvedCW' },
+            highlight: {
+              color: typeColorMap[conn1.type_id] || '#666',
+              width: 4,
+            },
+          });
+          edges.add({
+            id: conn2.id,
+            from: conn2.from_person_id,
+            to: conn2.to_person_id,
+            title: conn2.description || `Connection ${conn2.id}`,
+            width: 2,
+            color: typeColorMap[conn2.type_id] || '#666',
+            arrows: {
+              to: {
+                enabled: true,
+                scaleFactor: 0.5,
+              },
+            },
+            smooth: { type: 'curvedCW' },
+            highlight: {
+              color: typeColorMap[conn2.type_id] || '#666',
+              width: 4,
+            },
+          });
+        }
+      } else {
+        // Unidirectional: show normally
+        edges.add({
+          id: conn.id,
+          from: conn.from_person_id,
+          to: conn.to_person_id,
+          title: conn.description || `Connection ${conn.id}`,
+          width: 2,
+          color: typeColorMap[conn.type_id] || '#666',
+          arrows: {
+            to: {
+              enabled: true,
+              scaleFactor: 0.5,
+            },
+          },
+          smooth: false,
+          highlight: {
+            color: typeColorMap[conn.type_id] || '#666',
+            width: 4,
+          },
+        });
+      }
+    });
 
     const data = { nodes, edges };
     const options = {
@@ -106,7 +204,9 @@ export function GraphVisualization() {
         widthConstraint: { maximum: 200 },
       },
       edges: {
-        smooth: false,
+        smooth: {
+          type: 'continuous',
+        },
       },
     };
 

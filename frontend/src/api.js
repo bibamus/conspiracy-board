@@ -1,8 +1,22 @@
 import axios from 'axios';
 
-// Use the same domain/origin as the application is running on
-// Falls back to localhost:8080/api if VITE_API_URL is set
-const API_BASE = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+// Determine API base URL
+const getApiBase = () => {
+  // If VITE_API_URL is explicitly set, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // Local development: use localhost:8080
+  if (window.location.hostname === 'localhost' && window.location.port !== '8000') {
+    return 'http://localhost:8000/api';
+  }
+
+  // Docker/Production: use same origin
+  return `${window.location.origin}/api`;
+};
+
+const API_BASE = getApiBase();
 
 export const api = axios.create({
   baseURL: API_BASE,
