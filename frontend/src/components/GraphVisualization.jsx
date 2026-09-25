@@ -4,7 +4,7 @@ import {DataSet} from 'vis-data';
 import {apiClient} from '../api';
 import './GraphVisualization.css';
 
-export function GraphVisualization({ onRefresh }) {
+export function GraphVisualization() {
     const networkRef = useRef(null);
     const networkInstanceRef = useRef(null);
     const [loading, setLoading] = useState(true);
@@ -35,9 +35,6 @@ export function GraphVisualization({ onRefresh }) {
 
     const handleRefresh = async () => {
         await loadGraph();
-        if (onRefresh) {
-            onRefresh();
-        }
     };
 
     const visualizeGraph = (graph) => {
@@ -224,6 +221,11 @@ export function GraphVisualization({ onRefresh }) {
         };
 
         if (networkRef.current) {
+            // Destroy previous network instance
+            if (networkInstanceRef.current) {
+                networkInstanceRef.current.destroy();
+            }
+            
             networkInstanceRef.current = new Network(networkRef.current, data, options);
 
             // Handle node selection
