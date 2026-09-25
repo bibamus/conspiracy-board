@@ -2,9 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
-	_ "modernc.org/sqlite"
+	"modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 )
 
 type Database struct {
@@ -63,10 +65,12 @@ func (db *Database) initSchema() error {
 	    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	    FOREIGN KEY (from_person_id) REFERENCES people(id) ON DELETE CASCADE,
 	    FOREIGN KEY (to_person_id) REFERENCES people(id) ON DELETE CASCADE,
-	    FOREIGN KEY (type_id) REFERENCES connection_types(id) ON DELETE RESTRICT,
-	    UNIQUE(from_person_id, to_person_id, type_id)
+	    FOREIGN KEY (type_id) REFERENCES connection_types(id) ON DELETE RESTRICT
 	);
 
+	-- At most one connection per direction (A->B), regardless of type.
+	-- An index (not a table constraint) so it also applies to existing databases.
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_connections_pair ON connections(from_person_id, to_person_id);
 	CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_person_id);
 	CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_person_id);
 	CREATE INDEX IF NOT EXISTS idx_connections_type ON connections(type_id);
@@ -226,6 +230,10 @@ func (db *Database) DeletePerson(id int) error {
 }
 
 // Connection operations
+
+// ErrConnectionExists is returned when a connection from A to B already exists.
+var ErrConnectionExists = errors.New("a connection from this person to the other person already exists")
+
 func (db *Database) CreateConnection(fromID, toID, typeID int, description string, weight float64) (*Connection, error) {
 	if weight <= 0 {
 		weight = 1.0
@@ -236,6 +244,10 @@ func (db *Database) CreateConnection(fromID, toID, typeID int, description strin
 		fromID, toID, typeID, description, weight,
 	)
 	if err != nil {
+		var sqliteErr *sqlite.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.Code() == sqlite3.SQLITE_CONSTRAINT_UNIQUE {
+			return nil, ErrConnectionExists
+		}
 		return nil, err
 	}
 

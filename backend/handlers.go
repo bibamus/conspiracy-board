@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -185,6 +186,10 @@ func (api *API) CreateConnection(c *gin.Context) {
 	}
 
 	conn, err := api.db.CreateConnection(req.FromPersonID, req.ToPersonID, req.TypeID, req.Description, req.Weight)
+	if errors.Is(err, ErrConnectionExists) {
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

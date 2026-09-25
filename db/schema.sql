@@ -27,9 +27,11 @@ CREATE TABLE IF NOT EXISTS connections (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (from_person_id) REFERENCES people(id) ON DELETE CASCADE,
     FOREIGN KEY (to_person_id) REFERENCES people(id) ON DELETE CASCADE,
-    FOREIGN KEY (type_id) REFERENCES connection_types(id) ON DELETE RESTRICT,
-    UNIQUE(from_person_id, to_person_id, type_id)
+    FOREIGN KEY (type_id) REFERENCES connection_types(id) ON DELETE RESTRICT
 );
+
+-- At most one connection per direction (A->B), regardless of type
+CREATE UNIQUE INDEX IF NOT EXISTS idx_connections_pair ON connections(from_person_id, to_person_id);
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_person_id);
