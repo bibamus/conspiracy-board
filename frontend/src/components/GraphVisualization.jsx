@@ -147,7 +147,7 @@ export function GraphVisualization({ onRefresh }) {
                         },
                         smooth: {
                             type: 'curvedCW',
-                            roundness: 0.2
+                            roundness: 0.05
                         },
                         highlight: {
                             color: typeColorMap[conn1.type_id] || '#666',
@@ -169,7 +169,7 @@ export function GraphVisualization({ onRefresh }) {
                         },
                         smooth: {
                             type: 'curvedCW',
-                            roundness: 0.2
+                            roundness: 0.05
                         },
                         highlight: {
                             color: typeColorMap[conn2.type_id] || '#666',
