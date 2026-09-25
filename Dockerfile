@@ -26,6 +26,12 @@ RUN apk add --no-cache ca-certificates nginx
 
 WORKDIR /app
 
+# Create data directory
+RUN mkdir -p /data
+
+# Set environment variables
+ENV DB_PATH=/data/data.db
+
 # Copy nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 

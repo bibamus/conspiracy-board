@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,8 +25,14 @@ func corsMiddleware() gin.HandlerFunc {
 }
 
 func main() {
+	// Get database path from environment or use default
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "conspiracy-board.db"
+	}
+
 	// Initialize database
-	db, err := NewDatabase("conspiracy-board.db")
+	db, err := NewDatabase(dbPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
@@ -67,6 +74,7 @@ func main() {
 	// Start server
 	port := 8000
 	fmt.Printf("Starting backend server on http://localhost:%d\n", port)
+	fmt.Printf("Using database: %s\n", dbPath)
 	if err := router.Run(fmt.Sprintf("0.0.0.0:%d", port)); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
